@@ -1,0 +1,595 @@
+{
+  "name": "youtube automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {},
+            {
+              "triggerAtHour": 6
+            },
+            {
+              "triggerAtHour": 12
+            },
+            {
+              "triggerAtHour": 18
+            },
+            {
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -272,
+        -32
+      ],
+      "id": "fc22f737-b6eb-49fd-b94c-2ffadb3f23ee",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional YouTube strategy analyst and tech storyteller.\nYour goal is to help creators produce smart, credible, and high-retention tech videos that trend organically.\n\nRules:\n\nAvoid exaggeration or clickbait.\n\nPrioritize clarity, insight, and storytelling.\n\nEmphasize curiosity-driven titles (“How”, “Why”, “The truth about”).\n\nAudience: intelligent viewers who enjoy understanding technology deeply.\n\nYour Task:\n\nAnalyze the most recent videos from the YouTube API feed (category: technology).\n\nIdentify 1 emerging trend or question that audiences clearly care about.\n\nGenerate one new video concept built on this insight.\n\nOutput Format:\n\nTitle: non-clickbait but compelling\n\nThumbnail Concept: describe visual composition and tone\n\nHook (first 15 seconds): emotionally engaging yet factual\n\nOutline (1–2 min): structured, concise storytelling\n\nValue to Viewer: what makes this worth watching\n\nTone: honest, thoughtful, and visually sharp. here is video titles along their view count  {{ $json.yt_viral_titles }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        480,
+        -48
+      ],
+      "id": "ffbe4abd-e0b9-44d9-b7a1-a513fc98b6f7",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-distill-llama-70b:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        496,
+        128
+      ],
+      "id": "d664f7a1-481f-480e-b6f6-0fefed5a169f",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "BVuODv9vJ15O5Sof",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a550c923-7673-4b57-a429-217d00c52302",
+              "name": "ai_text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        32
+      ],
+      "id": "ebe9bcf6-7b16-4a75-84de-b80d8d5309d9",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={\n  \"part\": \"snippet, statistics\",\n  \"chart\": \"mostPopular\",\n  \"regionCode\": \"US\",\n  \"videoCategoryId\": \"28\",\n  \"maxResults\": 10}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        144,
+        -32
+      ],
+      "id": "d86eb1d2-b97e-42e2-8693-11c404935e6b",
+      "name": "HTTP Request",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "S2lzHVFIr5nFHg8b",
+          "name": "YouTube account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bdffa8f8-240e-49d3-9bf9-7e553461a7f5",
+              "name": "yt_viral_titles",
+              "value": "={{ $json.items[0].snippet.title }}{{ $json.items[0].statistics.viewCount }}{{ $json.items[1].snippet.localized.title }}{{ $json.items[1].statistics.viewCount }}{{ $json.items[2].snippet.title }}{{ $json.items[2].statistics.viewCount }}{{ $json.items[3].snippet.title }} {{ $json.items[3].statistics.viewCount }}{{ $json.items[4].snippet.localized.title }}\n{{ $json.items[4].statistics.viewCount }}\n{{ $json.items[9].snippet.localized.title }}\n{{ $json.items[9].statistics.viewCount }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        336,
+        -48
+      ],
+      "id": "d5a17ead-49fc-4f00-a1a9-a8753a090492",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "chatId": "2120327207",
+        "text": "={{ $json.ai_text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1776,
+        -224
+      ],
+      "id": "c2ecdc7f-a2c7-4021-a673-998d650aa826",
+      "name": "Send a text message",
+      "webhookId": "d7514fce-9854-465e-8921-e047e27665fc",
+      "credentials": {
+        "telegramApi": {
+          "id": "qjqjoysGj2maNcpE",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Video Production Assistant. Your task is to take a video concept with title, hook, outline, and thumbnail idea, and convert it into a production-ready output. \n\nProduce:\n1. A full script with timestamps for each segment.\n2. Detailed thumbnail instructions.\n3. Any visual or production notes for AI video generation (B-roll, music cues, scene ideas).\n\nFollow the input format strictly and avoid clickbait. \nOutput the result in JSON with two keys: \n{\n\n  \"title\" : {},\n  \"script\": { ... },\n  \"description\": { ... }\n}\n\n\ninput : {{ $json.ai_text }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        32
+      ],
+      "id": "609379e0-82f4-4714-b6b6-3cc193896c59",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        320
+      ],
+      "id": "97097795-540c-4b5d-8631-f4c5e0c9e605",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "model": "mistralai/mistral-small-3.2-24b-instruct:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        880,
+        288
+      ],
+      "id": "51bfb6ed-499f-4329-b9d8-35bba3636792",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "BVuODv9vJ15O5Sof",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "yt_data"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1024,
+        288
+      ],
+      "id": "8c815c6b-965d-4402-9384-3dc1ac389a0e",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -32
+      ],
+      "id": "499157f7-3f9d-428e-ba2b-1be0d6cf784e",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v2/renders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer c984e99d4b8147e19b9d189e304cbff09ec05f2f13fcffc8d32fdc211368a2527bd460d3e556bd028cf4188dc08e9ebc"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json "
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n\"template_id\": \"0327ae0d-791a-4e4b-8f60-cae7216c6000\",\n \"wait\": true,\n\"modifications\": {\n\"Video.source\": \"https://creatomate.com/files/assets/7347c3b7-e1a8-4439-96f1-f3dfc95c3d28\",\n\"Text-1.text\": $json.script,\n\"Text-2.text\": $json.title\n} \n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1728,
+        64
+      ],
+      "id": "dec29f29-4e39-4776-975b-e9ae17f3c064",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Edit Fields2').item.json.title }}",
+        "regionCode": "US",
+        "categoryId": "28",
+        "binaryProperty": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        2352,
+        64
+      ],
+      "id": "a15c523d-7367-42b9-989b-9f775043a650",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "S2lzHVFIr5nFHg8b",
+          "name": "YouTube account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        240
+      ],
+      "id": "860fcf11-57ba-462e-aed9-e9a05f92a227",
+      "name": "Auto-fixing Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        464
+      ],
+      "id": "591a985f-f972-469d-a886-822d3fbf7d8f",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "BVuODv9vJ15O5Sof",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"title\": \"why apple is popular\",\n\t\"script\": \"Why Smart Glasses Matter Visuals: Real-world demos—hands-free navigation during a jog, AR-enhanced meetings with virtual notes, or gaming overlays in daily life. Show diverse users to emphasize accessibility.. Narrator: These aren't just gadgets; they could become our next essential device, freeing us from screens. Think navigation without maps, instant translations in conversations, or AR experiences that enhance shopping or education. With AI integration, like in Meta's latest models, they're evolving into proactive assistants that anticipate your needs.\",\n  \"description\" : \"Explore how smart glasses are reshaping the future of tech in 2025 from AR overlays and AI cameras to hands-free navigation and immersive displays. We break down the hardware micro-displays, waveguides, compare leaders like Ray‑Ban Meta Gen 2 XReal One Pro, Viture Luma Pro, and discuss Apple's rumored N50, plus real-world uses, battery, cost, and privacy concerns. Perfect for tech fans aged 18–35 curious about AR, wearable tech, and the next screenless era. Like the video if you enjoyed it and share your thoughts below  would you wear smart glasses daily? #SmartGlasses #AugmentedReality #AR #WearableTech #RayBanMeta #XReal #futureoftech\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1392,
+        400
+      ],
+      "id": "e3c87da8-c4d7-4a88-bebc-e6be0e51a148",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3ed9d73d-29d3-4deb-b87d-908573985d0f",
+              "name": "script",
+              "value": "={{ $json.output.script }}",
+              "type": "string"
+            },
+            {
+              "id": "750afd1f-188c-4788-8997-e73e94c53927",
+              "name": "title",
+              "value": "={{ $json.output.title }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        32
+      ],
+      "id": "47c83b11-bff2-4319-931a-1f710fa00719",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "{\n  \"parameters\": {\n    \"values\": {\n      \"binary\": [\n        {\n          \"name\": \"video\",\n          \"value\": \"data\"\n        }\n      ]\n    }\n  },\n  \"name\": \"Rename Binary\",\n  \"type\": \"n8n-nodes-base.set\",\n  \"typeVersion\": 2,\n  \"position\": [650, 300]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1936,
+        64
+      ],
+      "id": "d1c13e9c-a147-4bf2-af36-8ef0cf0e90ed",
+      "name": "HTTP Request2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Date & Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto-fixing Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Auto-fixing Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Auto-fixing Output Parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "476cdf72-ed24-43b9-bcd2-754a70167519",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c430dd9db75c1f5d42eb181fbe841aaabef5efc3616ebd3c5290d32af1791d25"
+  },
+  "id": "1OpbbDbUwKciCbq3",
+  "tags": []
+}
